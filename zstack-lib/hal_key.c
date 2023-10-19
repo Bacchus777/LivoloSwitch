@@ -49,7 +49,7 @@
 uint8 portNum = 0;
 uint8 pinNum = 0;
 
-#define HAL_KEY_DEBOUNCE_VALUE 50
+#define HAL_KEY_DEBOUNCE_VALUE 10
 
 #define HAL_KEY_P0_EDGE_BITS HAL_KEY_BIT0
 #define HAL_KEY_P1_EDGE_BITS (HAL_KEY_BIT1 | HAL_KEY_BIT2)

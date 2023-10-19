@@ -5345,7 +5345,7 @@
                 </option>
                 <option>
                     <name>OutputFile</name>
-                    <state>GenericApp.d51</state>
+                    <state>LivoloSwitsh.d51</state>
                 </option>
                 <option>
                     <name>OutputFormat</name>
@@ -8002,6 +8002,12 @@
     <group>
         <name>App</name>
         <file>
+            <name>$PROJ_DIR$\..\Source\hal_key.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Source\hal_key.h</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\Source\OSAL_App.c</name>
         </file>
         <file>
@@ -8672,12 +8678,6 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\zstack-lib\hal_i2c.h</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\zstack-lib\hal_key.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\zstack-lib\hal_key.h</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\zstack-lib\utils.c</name>

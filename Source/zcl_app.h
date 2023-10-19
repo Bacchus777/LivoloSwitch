@@ -39,6 +39,7 @@ extern "C" {
 #define GEN_ON_OFF      ZCL_CLUSTER_ID_GEN_ON_OFF
 #define POWER_CFG       ZCL_CLUSTER_ID_GEN_ON
 
+#define ZCL_BOOLEAN     ZCL_DATATYPE_BOOLEAN
 #define ZCL_UINT8       ZCL_DATATYPE_UINT8
 #define ZCL_UINT16      ZCL_DATATYPE_UINT16
 #define ZCL_INT16       ZCL_DATATYPE_INT16
@@ -52,8 +53,8 @@ extern "C" {
  */
 
 typedef struct {
-    uint8 Left;
-    uint8 Right;
+    bool Left;
+    bool Right;
 } application_config_t;
 
 /*********************************************************************
@@ -73,14 +74,6 @@ extern const uint8 zclApp_ManufacturerName[];
 extern const uint8 zclApp_ModelId[];
 extern const uint8 zclApp_PowerSource;
 
-//extern uint8    zclApp_SensorEnabled; 
-extern uint8    zclApp_Occupied; 
-extern uint16   zclApp_IlluminanceSensor_MeasuredValue;
-//extern uint16   zclApp_MinThreshold;
-//extern uint16   zclApp_MaxThreshold;
-
-extern uint8    zclApp_Output; 
-
 extern application_config_t zclApp_Config;
 // APP_TODO: Declare application specific attributes here
 
@@ -99,10 +92,6 @@ extern void zclApp_Init(byte task_id);
 extern UINT16 zclApp_event_loop(byte task_id, UINT16 events);
 
 extern void zclApp_ResetAttributesToDefaultValues(void);
-
-// Функции работы с кнопками
-extern void App_HalKeyInit(void);
-extern void App_HalKeyPoll(void);
 
 // Функции команд управления
 static void zclApp_OnOffCB(uint8);

@@ -118,7 +118,7 @@
 
 /* S1 */
 /*#define PUSH1_BV          BV(3)
-#define PUSH1_SBIT        P2_1
+#define PUSH1_SBIT        P1_3
 #define PUSH1_POLARITY    ACTIVE_HIGH
 */
 
@@ -198,8 +198,6 @@ extern void MAC_RfFrontendSetup(void);
 #define PREFETCH_DISABLE()    st( FCTL = 0x04; )
 
 
-extern void App_HalKeyInit(void);                                              \
-  
 /* ----------- Board Initialization ---------- */
 #if defined (HAL_BOARD_CHDTECH_DEV) || (!defined(HAL_PA_LNA) && !defined(HAL_PA_LNA_CC2592))
 #define HAL_BOARD_INIT()                                         \
@@ -222,7 +220,6 @@ extern void App_HalKeyInit(void);                                              \
   LED3_DDR |= LED3_BV;                                           \
   LED4_DDR |= LED4_BV;                                           \
                                                                  \
-  App_HalKeyInit();                                              \
 }
 
 #elif defined (HAL_PA_LNA)
@@ -257,7 +254,6 @@ extern void App_HalKeyInit(void);                                              \
   LED3_DDR |= LED3_BV;                                           \
   LED4_DDR |= LED4_BV;                                           \
                                                                  \
-  App_HalKeyInit();                                              \
 }
 
 #elif defined (HAL_PA_LNA_CC2592) || defined (HAL_PA_LNA_SE2431L)
@@ -292,7 +288,6 @@ extern void App_HalKeyInit(void);                                              \
   LED3_DDR |= LED3_BV;                                           \
   LED4_DDR |= LED4_BV;                                           \
                                                                  \
-  App_HalKeyInit();                                              \
 }
 #endif
 
@@ -300,8 +295,47 @@ extern void App_HalKeyInit(void);                                              \
 #define HAL_DEBOUNCE(expr)    { int i; for (i=0; i<50; i++) { if (!(expr)) i = 0; } }
 
 /* ----------- Push Buttons ---------- */
-#define HAL_PUSH_BUTTON1()        (0)
-#define HAL_PUSH_BUTTON2()        (0)
+/* SW2 is at P1.3 */
+#define HAL_KEY_SW_2_PORT   P1
+#define HAL_KEY_SW_2_SBIT   P1_3
+#define HAL_KEY_SW_2_BIT    BV(3)
+#define HAL_KEY_SW_2_SEL    P1SEL
+#define HAL_KEY_SW_2_DIR    P1DIR
+#define HAL_KEY_SW_2_POLARITY      ACTIVE_HIGH
+
+/* edge interrupt */
+#define HAL_KEY_SW_2_EDGEBIT  BV(0)
+#define HAL_KEY_SW_2_EDGE     HAL_KEY_RISING_EDGE
+
+/* SW_2 interrupts */
+#define HAL_KEY_SW_2_IEN      IEN1  /* CPU interrupt mask register */
+#define HAL_KEY_SW_2_IENBIT   BV(1) /* Mask bit for all of Port_0 */
+#define HAL_KEY_SW_2_ICTL     P0IEN /* Port Interrupt Control register */
+#define HAL_KEY_SW_2_ICTLBIT  BV(3) /* P0IEN - P0.1 enable/disable bit */
+#define HAL_KEY_SW_2_PXIFG    P0IFG /* Interrupt flag at source */
+
+/* SW3 is at P1.5 */
+#define HAL_KEY_SW_3_PORT   P1
+#define HAL_KEY_SW_3_SBIT   P1_5
+#define HAL_KEY_SW_3_BIT    BV(5)
+#define HAL_KEY_SW_3_SEL    P1SEL
+#define HAL_KEY_SW_3_DIR    P1DIR
+#define HAL_KEY_SW_3_POLARITY      ACTIVE_HIGH
+
+/* edge interrupt */
+#define HAL_KEY_SW_3_EDGEBIT  BV(0)
+#define HAL_KEY_SW_3_EDGE     HAL_KEY_RISING_EDGE
+
+/* SW_2 interrupts */
+#define HAL_KEY_SW_3_IEN      IEN1  /* CPU interrupt mask register */
+#define HAL_KEY_SW_3_IENBIT   BV(1) /* Mask bit for all of Port_0 */
+#define HAL_KEY_SW_3_ICTL     P0IEN /* Port Interrupt Control register */
+#define HAL_KEY_SW_3_ICTLBIT  BV(3) /* P0IEN - P0.1 enable/disable bit */
+#define HAL_KEY_SW_3_PXIFG    P0IFG /* Interrupt flag at source */
+
+
+#define HAL_PUSH_BUTTON1()        (HAL_KEY_SW_2_POLARITY (HAL_KEY_SW_2_SBIT))
+#define HAL_PUSH_BUTTON2()        (HAL_KEY_SW_3_POLARITY (HAL_KEY_SW_3_SBIT))
 #define HAL_PUSH_BUTTON3()        (0)
 #define HAL_PUSH_BUTTON4()        (0)
 #define HAL_PUSH_BUTTON5()        (0)

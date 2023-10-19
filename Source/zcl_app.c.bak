@@ -57,16 +57,6 @@
  */
 byte zclApp_TaskID;
 
-// Состояние кнопок
-static uint8 halKeySavedKeys;
-
-// Состояние сенсора
-uint8 SENSOR_ENABLED = 0;
-
-uint8 zclApp_Occupied = 0; 
-uint16 zclApp_IlluminanceSensor_MeasuredValue = 0;
-uint16 zclApp_IlluminanceSensor_MeasuredValueRawAdc = 0;
-
 // Структура для отправки отчета
 afAddrType_t zclApp_DstAddr;
 // Номер сообщения
@@ -81,7 +71,6 @@ void user_delay_ms(uint32_t period) { MicroWait(period * 1000); }
  * LOCAL VARIABLES
  */
 
-
 /*********************************************************************
  * LOCAL FUNCTIONS
  */
@@ -91,18 +80,18 @@ static void zclApp_RestoreAttributesFromNV(void);
 static void zclApp_SaveAttributesToNV(void);
 static void zclApp_HandleKeys(byte portAndAction, byte keyCode);
 static ZStatus_t zclApp_ReadWriteAuthCB(afAddrType_t *srcAddr, zclAttrRec_t *pAttr, uint8 oper);
-static void zclApp_ReadLumosity(void);
 
-// Изменение состояние реле
-static void updateSensor( bool );
-// Изменение состояние реле
-static void updateOccupancy( bool );
-// Отображение включения датчика
-static void applySensor( void );
-// Отправка отчета о состоянии реле
-void zclApp_ReportOnOff( void );
+// Изменение состояние левого выключателя
+static void updateLeft( bool );
+// Изменение состояние правого выключателя
+static void updateRight( bool );
+// Отправка отчета о левом канале
+void zclApp_ReportLeft( void );
+// Отправка отчета о правом канале
+void zclApp_ReportRight( void );
 // Отправка отчета о присутствии
-void zclApp_ReportOccupancy( void );
+void zclApp_ReportOutput( void );
+
 
 /*********************************************************************
  * ZCL General Profile Callback table
@@ -119,53 +108,63 @@ static zclGeneral_AppCallbacks_t zclApp_CmdCallbacks = {
 };
 
 void zclApp_Init(byte task_id) {
-    IO_IMODE_PORT_PIN(LUMOISITY_PORT, LUMOISITY_PIN, IO_TRI);         // tri state p0.7 (lumosity pin)
-
-    HalLedSet(HAL_LED_ALL, HAL_LED_MODE_BLINK);
 
     zclApp_RestoreAttributesFromNV();
 
     zclApp_TaskID = task_id;
 
     bdb_RegisterSimpleDescriptor(&zclApp_FirstEP);
-
     zclGeneral_RegisterCmdCallbacks(zclApp_FirstEP.EndPoint, &zclApp_CmdCallbacks);
-
-    zcl_registerAttrList(zclApp_FirstEP.EndPoint, zclApp_AttrsCount, zclApp_AttrsFirstEP);
-
+    zcl_registerAttrList(zclApp_FirstEP.EndPoint, zclApp_AttrsFirstEPCount, zclApp_AttrsFirstEP);
     zcl_registerReadWriteCB(zclApp_FirstEP.EndPoint, NULL, zclApp_ReadWriteAuthCB);
+
+    bdb_RegisterSimpleDescriptor(&zclApp_SecondEP);
+    zclGeneral_RegisterCmdCallbacks(zclApp_SecondEP.EndPoint, &zclApp_CmdCallbacks);
+    zcl_registerAttrList(zclApp_SecondEP.EndPoint, zclApp_AttrsSecondEPCount, zclApp_AttrsSecondEP);
+    zcl_registerReadWriteCB(zclApp_SecondEP.EndPoint, NULL, zclApp_ReadWriteAuthCB);
+
     zcl_registerForMsg(zclApp_TaskID);
     RegisterForKeys(zclApp_TaskID);
 
     LREP("Build %s \r\n", zclApp_DateCodeNT);
 
-    HalI2CInit();
     osal_start_reload_timer(zclApp_TaskID, APP_REPORT_EVT, APP_REPORT_DELAY);
     osal_start_reload_timer(zclApp_TaskID, HAL_KEY_EVENT, 100);
+
 }
 
 static void zclApp_HandleKeys(byte portAndAction, byte keyCode) {
-    LREP("zclApp_HandleKeys portAndAction=0x%X keyCode=0x%X\r\n", portAndAction, keyCode);
+
     zclFactoryResetter_HandleKeys(portAndAction, keyCode);
     zclCommissioning_HandleKeys(portAndAction, keyCode);
-    if (portAndAction & HAL_KEY_PRESS) {
-        updateOccupancy(zclApp_Occupied == 0);
-        zclApp_ReportOccupancy();
+
+    updateLeft(keyCode & HAL_KEY_SW_2);
+    updateRight(keyCode & HAL_KEY_SW_3);
+
+/*    if (keyCode & HAL_KEY_SW_2) {
+       HalLedSet(HAL_LED_2, HAL_LED_MODE_ON);
     }
-    if (portAndAction & HAL_KEY_RELEASE) {
-        updateOccupancy(zclApp_Occupied == 0);
-        zclApp_ReportOccupancy();
+    else  {
+       HalLedSet(HAL_LED_2, HAL_LED_MODE_OFF);
     }
+    if (keyCode & HAL_KEY_SW_3) {
+       HalLedSet(HAL_LED_3, HAL_LED_MODE_ON);
+    }
+    else  {
+       HalLedSet(HAL_LED_3, HAL_LED_MODE_OFF);
+    }
+*/
 }
 
 uint16 zclApp_event_loop(uint8 task_id, uint16 events) {
-    LREP("events 0x%x \r\n", events);
+//    LREP("events 0x%x \r\n", events);
     if (events & SYS_EVENT_MSG) {
         afIncomingMSGPacket_t *MSGpkt;
         while ((MSGpkt = (afIncomingMSGPacket_t *)osal_msg_receive(zclApp_TaskID))) {
-            LREP("MSGpkt->hdr.event 0x%X clusterId=0x%X\r\n", MSGpkt->hdr.event, MSGpkt->clusterId);
+//            LREP("MSGpkt->hdr.event 0x%X clusterId=0x%X\r\n", MSGpkt->hdr.event, MSGpkt->clusterId);
             switch (MSGpkt->hdr.event) {
             case KEY_CHANGE:
+//                LREP("KEY_CHANGE\r\n");
                 zclApp_HandleKeys(((keyChange_t *)MSGpkt)->state, ((keyChange_t *)MSGpkt)->keys);
                 break;
 
@@ -198,7 +197,7 @@ uint16 zclApp_event_loop(uint8 task_id, uint16 events) {
     }
     if (events & APP_READ_SENSORS_EVT) {
         LREPMaster("APP_READ_SENSORS_EVT\r\n");
-
+///////////////////////
         return (events ^ APP_READ_SENSORS_EVT);
     }
 
@@ -206,7 +205,7 @@ uint16 zclApp_event_loop(uint8 task_id, uint16 events) {
 }
 
 static void zclApp_Report(void) {
-  osal_start_reload_timer(zclApp_TaskID, APP_READ_SENSORS_EVT, 500); 
+//  osal_start_reload_timer(zclApp_TaskID, APP_READ_SENSORS_EVT, 500); 
 }
 
 static void zclApp_BasicResetCB(void) {
@@ -242,76 +241,70 @@ static void zclApp_RestoreAttributesFromNV(void) {
     }
 }
 
-// Изменение состояния датчика
-void updateSensor ( bool value )
+// Изменение состояния левого выключателя
+void updateLeft ( bool value )
 {
   if (value) {
-    SENSOR_ENABLED = 1;
+    zclApp_Config.Left = 1;
   } else {
-    SENSOR_ENABLED = 0;
+    zclApp_Config.Left = 0;
   }
-  // сохраняем состояние реле
- //!!!!!!!!!!!!!!
-//  osal_nv_write(NV_DIYRuZRT_RELAY_STATE_ID, 0, 1, &RELAY_STATE);
-  // Отображаем новое состояние
-  applySensor();
-  // отправляем отчет
-  zclApp_ReportOnOff();
-}
-  
-// Изменение состояния датчика
-void updateOccupancy ( bool value )
-{
-  if (value) {
-    zclApp_Occupied = 1;
-  } else {
-    zclApp_Occupied = 0;
-  }
-  // сохраняем состояние реле
- //!!!!!!!!!!!!!!
-//  osal_nv_write(NV_DIYRuZRT_RELAY_STATE_ID, 0, 1, &RELAY_STATE);
-  // отправляем отчет
-//  zclApp_ReadLumosity();
-  zclApp_ReportOccupancy();
-}
-  
-// Применение состояние реле
-void applySensor ( void )
-{
-  // если выключено
-  if (SENSOR_ENABLED == 0) {
-    // то гасим светодиод 1
-    HalLedSet ( HAL_LED_1, HAL_LED_MODE_OFF );
-  } else {
-    // иначе включаем светодиод 1
-    HalLedSet ( HAL_LED_1, HAL_LED_MODE_ON );
-  }
-}
 
+  LREP("zclApp_Config.Left=%d \r\n", zclApp_Config.Left);
+
+  // сохраняем состояние датчика
+  zclApp_SaveAttributesToNV();
+  bdb_RepChangedAttrValue(zclApp_FirstEP.EndPoint, GEN_ON_OFF, ATTRID_ON_OFF);
+//  zclApp_ReportLeft();
+}
+  
+// Изменение состояния левого выключателя
+void updateRight ( bool value )
+{
+  if (value) {
+    zclApp_Config.Right = 1;
+  } else {
+    zclApp_Config.Right = 0;
+  }
+  LREP("zclApp_Config.Right=%d \r\n", zclApp_Config.Right);
+  // сохраняем состояние датчика
+  zclApp_SaveAttributesToNV();
+  bdb_RepChangedAttrValue(zclApp_SecondEP.EndPoint, GEN_ON_OFF, ATTRID_ON_OFF);
+//  zclApp_ReportRight();
+}
+  
 // Обработчик команд кластера OnOff
 static void zclApp_OnOffCB(uint8 cmd)
 {
+
   // запомним адрес откуда пришла команда
   // чтобы отправить обратно отчет
   afIncomingMSGPacket_t *pPtr = zcl_getRawAFMsg();
   zclApp_DstAddr.addr.shortAddr = pPtr->srcAddr.addr.shortAddr;
   
-  // Включить
-  if (cmd == COMMAND_ON) {
-    updateSensor(TRUE);
+  if (pPtr->endPoint == FIRST_ENDPOINT) {
+    if (cmd == COMMAND_ON) {
+      HalLedSet(HAL_LED_2, HAL_LED_MODE_ON);
+    }
+    // Выключить
+    else if (cmd == COMMAND_OFF) {
+      HalLedSet(HAL_LED_2, HAL_LED_MODE_OFF);
+    }
   }
-  // Выключить
-  else if (cmd == COMMAND_OFF) {
-    updateSensor(FALSE);
-  }
-  // Переключить
-  else if (cmd == COMMAND_TOGGLE) {
-    updateSensor(SENSOR_ENABLED == 0);
+  else {
+    if (cmd == COMMAND_ON) {
+      HalLedSet(HAL_LED_3, HAL_LED_MODE_ON);
+    }
+    // Выключить
+    else if (cmd == COMMAND_OFF) {
+      HalLedSet(HAL_LED_3, HAL_LED_MODE_OFF);
+    }
   }
 }
 
-// Информирование о состоянии реле
-void zclApp_ReportOnOff(void) {
+// Информирование о включении левого канала
+void zclApp_ReportLeft(void) {
+  LREP("REPORT LEFT = %d\r\n", zclApp_Config.Left);
   const uint8 NUM_ATTRIBUTES = 1;
 
   zclReportCmd_t *pReportCmd;
@@ -323,11 +316,11 @@ void zclApp_ReportOnOff(void) {
 
     pReportCmd->attrList[0].attrID = ATTRID_ON_OFF;
     pReportCmd->attrList[0].dataType = ZCL_DATATYPE_BOOLEAN;
-    pReportCmd->attrList[0].attrData = (void *)(&SENSOR_ENABLED);
+    pReportCmd->attrList[0].attrData = (void *)(&zclApp_Config.Left);
 
     zclApp_DstAddr.addrMode = (afAddrMode_t)Addr16Bit;
     zclApp_DstAddr.addr.shortAddr = 0;
-    zclApp_DstAddr.endPoint = 1;
+    zclApp_DstAddr.endPoint = FIRST_ENDPOINT;
 
     zcl_SendReportCmd(FIRST_ENDPOINT, &zclApp_DstAddr,
                       ZCL_CLUSTER_ID_GEN_ON_OFF, pReportCmd,
@@ -337,8 +330,8 @@ void zclApp_ReportOnOff(void) {
   osal_mem_free(pReportCmd);
 }
 
-// Информирование о присутствии
-void zclApp_ReportOccupancy(void) {
+// Информирование о включении правого канала
+void zclApp_ReportRight(void) {
   const uint8 NUM_ATTRIBUTES = 1;
 
   zclReportCmd_t *pReportCmd;
@@ -346,61 +339,23 @@ void zclApp_ReportOccupancy(void) {
   pReportCmd = osal_mem_alloc(sizeof(zclReportCmd_t) +
                               (NUM_ATTRIBUTES * sizeof(zclReport_t)));
   if (pReportCmd != NULL) {
+  LREP("REPORT RIGHT = %d\r\n", zclApp_Config.Right);
     pReportCmd->numAttr = NUM_ATTRIBUTES;
 
-    pReportCmd->attrList[0].attrID = ATTRID_MS_OCCUPANCY_SENSING_CONFIG_OCCUPANCY;
-    pReportCmd->attrList[0].dataType = ZCL_BITMAP8;
-    pReportCmd->attrList[0].attrData = (void *)(&zclApp_Occupied);
-
-    pReportCmd->attrList[1].attrID = ATTRID_MS_ILLUMINANCE_MEASURED_VALUE;
-    pReportCmd->attrList[1].dataType = ZCL_UINT16;
-    pReportCmd->attrList[1].attrData = (void *)(&zclApp_IlluminanceSensor_MeasuredValue);
+    pReportCmd->attrList[0].attrID = ATTRID_ON_OFF;
+    pReportCmd->attrList[0].dataType = ZCL_DATATYPE_BOOLEAN;
+    pReportCmd->attrList[0].attrData = (void *)(&zclApp_Config.Right);
 
     zclApp_DstAddr.addrMode = (afAddrMode_t)Addr16Bit;
     zclApp_DstAddr.addr.shortAddr = 0;
-    zclApp_DstAddr.endPoint = 1;
+    zclApp_DstAddr.endPoint = SECOND_ENDPOINT;
 
-    zcl_SendReportCmd(FIRST_ENDPOINT, &zclApp_DstAddr,
-                      OCCUPANCY, pReportCmd,
+    zcl_SendReportCmd(SECOND_ENDPOINT, &zclApp_DstAddr,
+                      ZCL_CLUSTER_ID_GEN_ON_OFF, pReportCmd,
                       ZCL_FRAME_CLIENT_SERVER_DIR, false, SeqNum++);
   }
 
   osal_mem_free(pReportCmd);
-}
-
-void App_HalKeyPoll (void)
-{
-  uint8 keys = 0;
-
-  // нажата кнопка 1 ?
-  if (HAL_PUSH_BUTTON1())
-  {
-    keys |= HAL_KEY_SW_1;
-  }
-  
-  // нажата кнопка 2 ?
-  if (HAL_PUSH_BUTTON2())
-  {
-    keys |= HAL_KEY_SW_2;
-  }
-  
-  if (keys == halKeySavedKeys)
-  {
-    // Выход - нет изменений
-    return;
-  }
-  // Сохраним текущее состояние кнопок для сравнения в след раз
-  halKeySavedKeys = keys;
-
-  // Вызовем генерацию события изменений кнопок
-  OnBoard_SendKeys(keys, HAL_KEY_STATE_NORMAL);
-}
-
-static void zclApp_ReadLumosity(void) {
-    zclApp_IlluminanceSensor_MeasuredValueRawAdc = adcReadSampled(LUMOISITY_PIN, HAL_ADC_RESOLUTION_14, HAL_ADC_REF_AVDD, 5);
-    zclApp_IlluminanceSensor_MeasuredValue = zclApp_IlluminanceSensor_MeasuredValueRawAdc;
-    bdb_RepChangedAttrValue(zclApp_FirstEP.EndPoint, ILLUMINANCE, ATTRID_MS_ILLUMINANCE_MEASURED_VALUE);
-    LREP("IlluminanceSensor_MeasuredValue value=%d\r\n", zclApp_IlluminanceSensor_MeasuredValue);
 }
 
 /****************************************************************************

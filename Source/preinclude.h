@@ -22,7 +22,7 @@
 
 
 #define HAL_BUZZER FALSE
-#define HAL_KEY FALSE
+#define HAL_KEY TRUE
 //#define ISR_KEYINTERRUPT
 
 
@@ -45,13 +45,13 @@
 #endif
 
 #if defined(HAL_BOARD_TARGET)
-//    #define HAL_KEY_P1_INPUT_PINS 0x28
+//    #define HAL_KEY_P1_INPUT_PINS BV(3)
 //    #define HAL_KEY_P1_INPUT_PINS BV(3)
 //    #define HAL_KEY_P1_INPUT_PINS BV(3) | BV(5)
 //    #define HAL_KEY_P1_INPUT_PINS_EDGE HAL_KEY_RISING_EDGE
 
 
-
+/*
     #define PUSH1_BV          BV(3)
     #define PUSH1_SBIT        P1_3
     #define PUSH1_POLARITY    ACTIVE_HIGH
@@ -64,7 +64,7 @@
     #define PUSH1_ICTLBIT     BV(3) 
     #define PUSH1_EDGEBIT     BV(0)
     #define PUSH1_EDGE        HAL_KEY_RISING_EDGE
-/*
+
     #define PUSH2_BV          BV(5)
     #define PUSH2_SBIT        P1_5
     #define PUSH2_POLARITY    ACTIVE_HIGH
