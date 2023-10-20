@@ -71,8 +71,6 @@ void user_delay_ms(uint32_t period) { MicroWait(period * 1000); }
  * LOCAL VARIABLES
  */
 
-afAddrType_t inderect_DstAddr = {.addrMode = (afAddrMode_t)AddrNotPresent, .endPoint = 0, .addr.shortAddr = 0};
-
 /*********************************************************************
  * LOCAL FUNCTIONS
  */
@@ -85,8 +83,11 @@ static ZStatus_t zclApp_ReadWriteAuthCB(afAddrType_t *srcAddr, zclAttrRec_t *pAt
 
 // Изменение состояние левого выключателя
 static void updateLeft( bool );
+
+#ifdef HAL_2_CHANNEL
 // Изменение состояние правого выключателя
 static void updateRight( bool );
+#endif
 
 /*********************************************************************
  * ZCL General Profile Callback table
@@ -113,11 +114,12 @@ void zclApp_Init(byte task_id) {
     zcl_registerAttrList(zclApp_FirstEP.EndPoint, zclApp_AttrsFirstEPCount, zclApp_AttrsFirstEP);
     zcl_registerReadWriteCB(zclApp_FirstEP.EndPoint, NULL, zclApp_ReadWriteAuthCB);
 
+#ifdef HAL_2_CHANNEL
     bdb_RegisterSimpleDescriptor(&zclApp_SecondEP);
     zclGeneral_RegisterCmdCallbacks(zclApp_SecondEP.EndPoint, &zclApp_CmdCallbacks);
     zcl_registerAttrList(zclApp_SecondEP.EndPoint, zclApp_AttrsSecondEPCount, zclApp_AttrsSecondEP);
     zcl_registerReadWriteCB(zclApp_SecondEP.EndPoint, NULL, zclApp_ReadWriteAuthCB);
-
+#endif
     zcl_registerForMsg(zclApp_TaskID);
     RegisterForKeys(zclApp_TaskID);
 
@@ -131,8 +133,9 @@ void zclApp_Init(byte task_id) {
 static void zclApp_HandleKeys(byte portAndAction, byte keyCode) {
 
     updateLeft(keyCode & HAL_KEY_SW_2 ? true : false);
+#ifdef HAL_2_CHANNEL
     updateRight(keyCode & HAL_KEY_SW_3 ? true : false);
-
+#endif
 }
 
 uint16 zclApp_event_loop(uint8 task_id, uint16 events) {
@@ -232,6 +235,7 @@ void updateLeft ( bool value )
   bdb_RepChangedAttrValue(zclApp_FirstEP.EndPoint, GEN_ON_OFF, ATTRID_ON_OFF);
 }
   
+#ifdef HAL_2_CHANNEL
 // Изменение состояния левого выключателя
 void updateRight ( bool value )
 {
@@ -242,7 +246,8 @@ void updateRight ( bool value )
   zclApp_SaveAttributesToNV();
   bdb_RepChangedAttrValue(zclApp_SecondEP.EndPoint, GEN_ON_OFF, ATTRID_ON_OFF);
 }
-  
+#endif
+
 // Обработчик команд кластера OnOff
 static void zclApp_OnOffCB(uint8 cmd)
 {
@@ -260,6 +265,7 @@ static void zclApp_OnOffCB(uint8 cmd)
       HalLedSet(HAL_LED_2, HAL_LED_MODE_BLINK);
     }
   }
+#ifdef HAL_2_CHANNEL
   else {
     if ((cmd == COMMAND_ON) & !zclApp_Config.Right) {
       HalLedSet(HAL_LED_3, HAL_LED_MODE_BLINK);
@@ -269,6 +275,7 @@ static void zclApp_OnOffCB(uint8 cmd)
       HalLedSet(HAL_LED_3, HAL_LED_MODE_BLINK);
     }
   }
+#endif
 }
 
 /****************************************************************************

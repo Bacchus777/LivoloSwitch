@@ -48,17 +48,25 @@ const uint8 zclApp_ApplicationVersion = 3;
 const uint8 zclApp_StackVersion = 4;
 
 const uint8 zclApp_ManufacturerName[] = {7, 'B', 'a', 'c', 'c', 'h', 'u', 's'};
+#ifndef HAL_2_CHANNEL
+const uint8 zclApp_ModelId[] = {16, 'L', 'i', 'v', 'o', 'l', 'o', '_', '1', '_', 'C', 'h', 'a', 'n', 'n', 'e', 'l'};
+#endif
+#ifdef HAL_2_CHANNEL
 const uint8 zclApp_ModelId[] = {16, 'L', 'i', 'v', 'o', 'l', 'o', '_', '2', '_', 'C', 'h', 'a', 'n', 'n', 'e', 'l'};
+#endif
 const uint8 zclApp_PowerSource = POWER_SOURCE_MAINS_1_PHASE;
 
 
 #define DEFAULT_Left FALSE
+#ifdef HAL_2_CHANNEL
 #define DEFAULT_Right FALSE
-
+#endif
 
 application_config_t zclApp_Config = {
     .Left = DEFAULT_Left,
+#ifdef HAL_2_CHANNEL
     .Right = DEFAULT_Right,
+#endif
 };
 
 
@@ -110,6 +118,7 @@ SimpleDescriptionFormat_t zclApp_FirstEP = {
 };
 
 // Second EP
+#ifdef HAL_2_CHANNEL
 
 CONST zclAttrRec_t zclApp_AttrsSecondEP[] = {
     {GEN_ON_OFF, {ATTRID_ON_OFF, ZCL_BOOLEAN, RW | RR, (void *)&zclApp_Config.Right}},
@@ -140,10 +149,13 @@ SimpleDescriptionFormat_t zclApp_SecondEP = {
     (cId_t *)zclApp_InClusterListSecondEP,      //  byte *pAppInClusterList;
     APP_MAX_OUTCLUSTERS_SECOND_EP,             //  byte  AppNumInClusters;
     (cId_t *)zclApp_OutClusterListSecondEP      //  byte *pAppOutClusterList;
-};
 
+};
+#endif
 
 void zclApp_ResetAttributesToDefaultValues(void) {
     zclApp_Config.Left = DEFAULT_Left;
+#ifdef HAL_2_CHANNEL
     zclApp_Config.Right = DEFAULT_Right;
+#endif    
 }

@@ -45,38 +45,6 @@
 #endif
 
 #if defined(HAL_BOARD_TARGET)
-//    #define HAL_KEY_P1_INPUT_PINS BV(3)
-//    #define HAL_KEY_P1_INPUT_PINS BV(3)
-//    #define HAL_KEY_P1_INPUT_PINS BV(3) | BV(5)
-//    #define HAL_KEY_P1_INPUT_PINS_EDGE HAL_KEY_RISING_EDGE
-
-
-/*
-    #define PUSH1_BV          BV(3)
-    #define PUSH1_SBIT        P1_3
-    #define PUSH1_POLARITY    ACTIVE_HIGH
-    #define PUSH1_PORT        P1
-    #define PUSH1_SEL         P1SEL
-    #define PUSH1_DIR         P1DIR
-    #define PUSH1_IEN         IEN1  
-    #define PUSH1_IENBIT      BV(5) 
-    #define PUSH1_ICTL        P1IEN 
-    #define PUSH1_ICTLBIT     BV(3) 
-    #define PUSH1_EDGEBIT     BV(0)
-    #define PUSH1_EDGE        HAL_KEY_RISING_EDGE
-
-    #define PUSH2_BV          BV(5)
-    #define PUSH2_SBIT        P1_5
-    #define PUSH2_POLARITY    ACTIVE_HIGH
-    #define PUSH2_PORT        P1
-    #define PUSH2_SEL         P1SEL
-    #define PUSH2_DIR         P1DIR
-    #define PUSH2_IEN         IEN1  
-    #define PUSH2_IENBIT      BV(5) 
-    #define PUSH2_ICTL        P1IEN 
-    #define PUSH2_ICTLBIT     BV(5) 
-*/
-
     #define HAL_UART_DMA 1
     #define HAL_UART_ISR 0
 //    #define INT_HEAP_LEN (2256 - 0xE)

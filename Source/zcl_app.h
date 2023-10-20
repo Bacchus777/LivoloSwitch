@@ -23,8 +23,9 @@ extern "C" {
 
 // 
 #define FIRST_ENDPOINT            1
-#define SECOND_ENDPOINT           2
-
+#ifdef HAL_2_CHANNEL
+  #define SECOND_ENDPOINT           2
+#endif
 /*********************************************************************
  * MACROS
  */
