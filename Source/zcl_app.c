@@ -252,21 +252,21 @@ static void zclApp_OnOffCB(uint8 cmd)
   afIncomingMSGPacket_t *pPtr = zcl_getRawAFMsg();
   
   if (pPtr->endPoint == FIRST_ENDPOINT) {
-    if (cmd == COMMAND_ON) {
-      HalLedSet(HAL_LED_2, HAL_LED_MODE_ON);
+    if ((cmd == COMMAND_ON) & !zclApp_Config.Left) {
+      HalLedSet(HAL_LED_2, HAL_LED_MODE_BLINK);
     }
     // Выключить
-    else if (cmd == COMMAND_OFF) {
-      HalLedSet(HAL_LED_2, HAL_LED_MODE_OFF);
+    else if ((cmd == COMMAND_OFF) & zclApp_Config.Left) {
+      HalLedSet(HAL_LED_2, HAL_LED_MODE_BLINK);
     }
   }
   else {
-    if (cmd == COMMAND_ON) {
-      HalLedSet(HAL_LED_3, HAL_LED_MODE_ON);
+    if ((cmd == COMMAND_ON) & !zclApp_Config.Right) {
+      HalLedSet(HAL_LED_3, HAL_LED_MODE_BLINK);
     }
     // Выключить
-    else if (cmd == COMMAND_OFF) {
-      HalLedSet(HAL_LED_3, HAL_LED_MODE_OFF);
+    else if ((cmd == COMMAND_OFF) & zclApp_Config.Right) {
+      HalLedSet(HAL_LED_3, HAL_LED_MODE_BLINK);
     }
   }
 }
